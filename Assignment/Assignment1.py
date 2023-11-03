@@ -13,14 +13,14 @@ class Sigmoid():
 
 class Softmax():
 
-  def __init__(self):
-    pass
+    def __init__(self):
+        pass
 
-  def forward(self, x):
-    return math.exp(x) / sum([math.exp(i) for i in x])
+    def forward(self, x):
+        return [math.exp(i) / sum([math.exp(j) for j in x]) for i in x]
 
-  def backward(self, x, y):
-    return y * (1 - y)
+    def backward(self, x, y):
+        return y * (1 - y)
 
 # Input layer
 inputs = [1.,-1.]
@@ -52,10 +52,7 @@ k_layer_2 = []
 for i in range(len(biases_layer_2)):
   k_layer_2.append(sum([h_layer_1[j] * weights_layer_2[j][i] for j in range(len(h_layer_1))]) + biases_layer_2[i])
 
-p_layer_2 = []
-for i in range(len(biases_layer_2)):
-  p_layer_2.append(math.exp(k_layer_2[i]) / sum([math.exp(k_layer_2[j]) for j in range(len(k_layer_2))]))
-##p_layer_2.append(softmax.forward(p_layer_2[i]))
+p_layer_2=softmax.forward(k_layer_2)
 
 # Loss
 target_class = 0
