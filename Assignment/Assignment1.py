@@ -1,15 +1,30 @@
+import numpy as np
 import math
+
+class Plus():
+
+    def __init__(self):
+        pass
+
+    def forward(self, x, y):
+        return x + y
+
+    def backward(self, goutput):
+        return goutput, goutput
 
 class Sigmoid():
 
-  def __init__(self):
-    pass
+    def __init__(self):
+        pass
 
-  def forward(self, x):
-    return 1 / (1 + math.exp(-x))
+    def forward(self, x):
+        sigx = 1 / (1 + np.exp(-x))
+        self.sigx = sigx
+        return sigx
 
-  def backward(self, x, y):
-    return y * (1 - y)
+    def backward(self, goutput):
+        sigx = self.sigx
+        return goutput * sigx * (1 - sigx)
 
 class Softmax():
 
@@ -17,21 +32,55 @@ class Softmax():
         pass
 
     def forward(self, x):
-        return [math.exp(i) / sum([math.exp(j) for j in x]) for i in x]
+        sofx = [math.exp(i) / sum([math.exp(j) for j in x]) for i in x]
+        self.sofx = sofx
+        return sofx
 
-    def backward(self, x, y):
-        return y * (1 - y)
+    def backward(self, soutput):
+        sofx = self.sofx
+        gradients = []
+        for i in range(len(sofx)):
+            gradient = sofx[i] * (1 - sofx[i])
+            if i == soutput:
+                gradient -= 1.0
+            gradients.append(gradient)
+        return gradients
+
+class RowSum():
+
+    def __init__(self):
+        pass
+
+    def forward(self, x):
+        sumd = x.sum(axis=1)
+        self.x = x.shape[1]
+        return sumd
+
+    def backward(self, gy):
+        n, m= gy.shape[0], self.x
+        return gy[:,None].expand(n, m)
+
+class Expand():
+
+    def __init__(self):
+        pass
+
+    def forward(self, x, size):
+        return np.full(x, size=size)
+
+    def backward(self, gy):
+        return gy.sum(), None
 
 # Input layer
 inputs = [1.,-1.]
 
 # First layer
-weights_layer_1 = [[1., 1., 1.], [-1., -1., -1.]]
-biases_layer_1 = [0., 0., 0.]
+W = [[1., 1., 1.], [-1., -1., -1.]]
+b = [0., 0., 0.]
 
 # Second layer
-weights_layer_2 = [[1., 1.], [-1., -1.], [-1., -1.]]
-biases_layer_2 = [0., 0.]
+V = [[1., 1.], [-1., -1.], [-1., -1.]]
+c = [0., 0.]
 
 # Sigmoid activation function
 sigmoid = Sigmoid()
@@ -40,45 +89,10 @@ sigmoid = Sigmoid()
 softmax = Softmax()
 
 # Forward pass
-k_layer_1 = []
-for i in range(len(biases_layer_1)):
-  k_layer_1.append(sum([inputs[j] * weights_layer_1[j][i] for j in range(len(inputs))]) + biases_layer_1[i])
-
-h_layer_1 = []
-for i in range(len(biases_layer_1)):
-  h_layer_1.append(sigmoid.forward(k_layer_1[i]))
-
-k_layer_2 = []
-for i in range(len(biases_layer_2)):
-  k_layer_2.append(sum([h_layer_1[j] * weights_layer_2[j][i] for j in range(len(h_layer_1))]) + biases_layer_2[i])
-
-p_layer_2=softmax.forward(k_layer_2)
-
-# Loss
-target_class = 0
-loss = -math.log(p_layer_2[target_class])
+k = np.dot(inputs, W) + b
+h = sigmoid.forward(k)
+s = np.dot(h, V) + c
+o = softmax.forward(s)
+loss = -np.log(o[1])
 
 # Backward pass
-d_loss_dk_layer_2 = []
-for i in range(2):
-  d_loss_dk_layer_2.append(sigmoid.backward(k_layer_2[i], p_layer_2[target_class]))
-
-d_loss_dw_layer_2 = []
-for i in range(2):
-  d_loss_dw_layer_2.append([])
-  for j in range(len(h_layer_1)):
-    d_loss_dw_layer_2[i].append(h_layer_1[j] * d_loss_dk_layer_2[i])
-
-d_loss_db_layer_2 = d_loss_dk_layer_2
-
-d_loss_dk_layer_1 = []
-for i in range(2):
-  d_loss_dk_layer_1.append(sum([d_loss_dw_layer_2[j][i] * d_loss_dk_layer_2[j] for j in range(len(d_loss_dw_layer_2))]) + d_loss_dk_layer_2[1] * d_loss_dk_layer_2[1])
-
-d_loss_dw_layer_1 = []
-for i in range(2):
-  d_loss_dw_layer_1.append([])
-  for j in range(len(inputs)):
-    d_loss_dw_layer_1[i].append(inputs[j])
-
-d_loss_db_layer_1 = d
