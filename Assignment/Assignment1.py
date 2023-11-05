@@ -100,8 +100,7 @@ s = np.dot(h, V) + c
 o = softmax.forward(s)
 
 # Cross-entropy loss derivative for correct class
-l = -np.log(o[0])
-dl = -1/o[0] #dl/do [-2]
+l, dl = [(-np.log(o[i]), -1/o[i]) for i in range(len(o)) if t[i] == 1][0]
 
 # Backward pass
 ds = np.array(softmax.backward(dl)) #dl/ds c
@@ -115,3 +114,4 @@ print("W:", dw)
 print("b", dh)
 print("V", dv)
 print("c", ds)
+
