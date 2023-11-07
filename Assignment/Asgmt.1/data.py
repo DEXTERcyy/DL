@@ -131,12 +131,6 @@ def load():
         mnist = pickle.load(f)
     return mnist["training_images"], mnist["training_labels"], mnist["test_images"], mnist["test_labels"]
 
-#init=init()
-softmax=Softmax()
-sigmoid=Sigmoid()
-
-(xtrain, ytrain), (xval, yval), num_cls = load_synth()
-
 def initialize_weights(input_dim, hidden_dim, output_dim):
     w1 = np.random.randn(input_dim, hidden_dim) * 0.01
     b1 = np.zeros(hidden_dim)
@@ -180,3 +174,10 @@ def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_
             b2 -= learning_rate * db2
 
     return w1, b1, w2, b2
+
+#init=init()
+softmax=Softmax()
+sigmoid=Sigmoid()
+
+(xtrain, ytrain), (xval, yval), num_cls = load_synth()
+train_network(xtrain, ytrain, 2, 3, 1, learning_rate=0.01, num_epochs=100)
