@@ -185,4 +185,5 @@ def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_
 
 
 (xtrain, ytrain), (xval, yval), num_cls = load_synth()
-train_network(np.array(xtrain), np.array(ytrain), 2, 3, 1, learning_rate=0.01, num_epochs=100)
+#train_network(np.array(xtrain), np.array(ytrain), 2, 3, 1, learning_rate=0.01, num_epochs=100)
+#train_network(np.array([[1,-1],[0.5,0.5]]), np.array([1,0]), 2, 3, 2, learning_rate=0.01, num_epochs=10)

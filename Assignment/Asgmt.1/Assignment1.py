@@ -1,5 +1,4 @@
 import numpy as np
-import math
 
 class Plus():
 
@@ -32,7 +31,7 @@ class Softmax():
         self.sofx = None
 
     def forward(self, x):
-        sofx = [math.exp(i) / sum([math.exp(j) for j in x]) for i in x]
+        sofx = [np.exp(i) / sum([np.exp(j) for j in x]) for i in x]
         self.sofx = sofx
         return sofx
 
