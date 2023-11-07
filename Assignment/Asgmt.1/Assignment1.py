@@ -36,15 +36,9 @@ class Softmax():
         self.sofx = sofx
         return sofx
 
-    def backward(self, soutput):
-        gradients = []
+    def backward(self,t):
         sofx = self.sofx
-        for i in range(len(sofx)):
-          if t[i] == 1:
-            gradients.append(sofx[i]*(1-sofx[i]))
-          else:
-            gradients.append(-sofx[0]*sofx[i])
-        return np.array(gradients)*soutput
+        return np.array(sofx)-np.array(t)
 
 class RowSum():
 
@@ -73,6 +67,13 @@ class Expand():
       gy = np.array(gy)
       return gy.sum(), None
 
+def compute_loss(y_true, y_pred): # compute cross-entropy loss
+    loss = 0
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    for i in range(y_true.shape[0]):
+        loss += -y_true[i]*np.log(y_pred[i])
+    return loss
+
 # Input layer
 inputs = np.array([1.,-1.])
 
@@ -100,10 +101,11 @@ s = np.dot(h, V) + c
 o = softmax.forward(s)
 
 # Cross-entropy loss derivative for correct class
-l, dl = [(-np.log(o[i]), -1/o[i]) for i in range(len(o)) if t[i] == 1][0]
+l=compute_loss(t,o)
+print("Loss:", l)
 
 # Backward pass
-ds = np.array(softmax.backward(dl)) #dl/ds c
+ds = np.array(softmax.backward(t)) #dl/ds c
 dh = np.dot(ds, np.array(V).T) #dl/dh b
 dk = sigmoid.backward(dh)# dl/dk 
 dw = np.dot(np.array([inputs]).T, np.array([dk])) #dk/dw W
