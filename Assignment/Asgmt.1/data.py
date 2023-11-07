@@ -4,6 +4,41 @@ from urllib import request
 import gzip
 import pickle
 import os
+import math
+
+class Softmax():
+
+    def __init__(self):
+        self.sofx = None
+
+    def forward(self, x):
+        sofx = [math.exp(i) / sum([math.exp(j) for j in x]) for i in x]
+        self.sofx = sofx
+        return sofx
+
+    def backward(self, soutput):
+        gradients = []
+        sofx = self.sofx
+        for i in range(len(sofx)):
+          if t[i] == 1:
+            gradients.append(sofx[i]*(1-sofx[i]))
+          else:
+            gradients.append(-sofx[0]*sofx[i])
+        return np.array(gradients)*soutput
+
+class Sigmoid():
+
+  def __init__(self):
+    self.sigx = None
+
+  def forward(self, x):
+    sigx = 1 / (1 + np.exp(-x))
+    self.sigx = sigx
+    return sigx
+
+  def backward(self, goutput):
+    sigx = self.sigx
+    return goutput * sigx * (1 - sigx)
 
 def load_synth(num_train=60_000, num_val=10_000, seed=0):
     """
@@ -19,17 +54,17 @@ def load_synth(num_train=60_000, num_val=10_000, seed=0):
      integer array. The second contains the test/validation data in the same format. The last integer contains the
      number of classes (this is always 2 for this function).
     """
-    np.random.seed(seed)
+    np.random.seed(seed) # for reproducibility
 
-    THRESHOLD = 0.6
-    quad = np.asarray([[1, -0.05], [1, .4]])
+    THRESHOLD = 0.6 # threshold for the quadratic form
+    quad = np.asarray([[1, -0.05], [1, .4]]) # quadratic form matrix
 
-    ntotal = num_train + num_val
+    ntotal = num_train + num_val # total number of instances
 
-    x = np.random.randn(ntotal, 2)
+    x = np.random.randn(ntotal, 2) # generate random data
 
     # compute the quadratic form
-    q = np.einsum('bf, fk, bk -> b', x, quad, x)
+    q = np.einsum('bf, fk, bk -> b', x, quad, x) # einsum is Einstein summation [ntotal,]
     y = (q > THRESHOLD).astype(np.int64)
 
     return (x[:num_train, :], y[:num_train]), (x[num_train:, :], y[num_train:]), 2
@@ -103,3 +138,51 @@ def load():
     return mnist["training_images"], mnist["training_labels"], mnist["test_images"], mnist["test_labels"]
 
 #init=init()
+softmax=Softmax()
+sigmoid=Sigmoid()
+
+(xtrain, ytrain), (xval, yval), num_cls = load_synth()
+
+def initialize_weights(input_dim, hidden_dim, output_dim):
+    w1 = np.random.randn(input_dim, hidden_dim) * 0.01
+    b1 = np.zeros(hidden_dim)
+    w2 = np.random.randn(hidden_dim, output_dim) * 0.01
+    b2 = np.zeros(output_dim)
+    return w1, b1, w2, b2
+
+def compute_loss(y_true, y_pred):
+    epsilon = 1e-7
+    y_pred = np.clip(y_pred, epsilon, 1. - epsilon)
+    loss = np.sum(-y_true * np.log(y_pred))
+    return loss / y_true.shape[0] # normalize by number of instances
+
+def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_rate=0.01, num_epochs=100):
+    w1, b1, w2, b2 = initialize_weights(input_dim, hidden_dim, output_dim)
+
+    for i in range(num_epochs):
+        # Forward Pass x_train->z1-a1->z2-y_pred
+            z1 = np.dot(x_train, w1) + b1
+            a1 = sigmoid(z1)
+            z2 = np.dot(a1, w2) + b2
+            y_pred = softmax(z2)
+
+            loss = compute_loss(y_train, y_pred)
+            print(f'Epoch {i+1}/{num_epochs}, Loss: {loss}')
+
+            # Backward Pass
+            dz2 = y_pred - y_train # derivative of softmax
+            dw2 = np.dot(a1.T, dz2) # derivative of weights
+            db2 = np.sum(dz2, axis=0) # derivative of bias
+            da1 = np.dot(dz2, w2.T) # derivative of activation
+            dz1 = da1 * sigmoid.backward(a1) # derivative of Sigmoid
+            dw1 = np.dot(x_train.T, dz1)
+            db1 = np.sum(dz1, axis=0)
+
+            # SGD weight updating
+            w1 -= learning_rate * dw1
+            b1 -= learning_rate * db1
+            w2 -= learning_rate * dw2
+            b2 -= learning_rate * db2
+
+    return w1, b1, w2, b2
+    b2 -= learning_rate * db2
