@@ -30,7 +30,7 @@ def load_synth(num_train=60_000, num_val=10_000, seed=0):
 
     # compute the quadratic form
     q = np.einsum('bf, fk, bk -> b', x, quad, x)
-    y = (q > THRESHOLD).astype(np.int)
+    y = (q > THRESHOLD).astype(np.int64)
 
     return (x[:num_train, :], y[:num_train]), (x[num_train:, :], y[num_train:]), 2
 
@@ -102,4 +102,4 @@ def load():
         mnist = pickle.load(f)
     return mnist["training_images"], mnist["training_labels"], mnist["test_images"], mnist["test_labels"]
 
-init=init()
+#init=init()
