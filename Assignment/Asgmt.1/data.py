@@ -4,7 +4,6 @@ from urllib import request
 import gzip
 import pickle
 import os
-import math
 
 class Softmax():
 
@@ -12,8 +11,8 @@ class Softmax():
         self.sofx = None
 
     def forward(self, x):
-        sofx = [math.exp(i) / sum([math.exp(j) for j in x]) for i in x]
-        self.sofx = sofx
+        sofx = [np.exp(i) / sum([np.exp(j) for j in x]) for i in x]
+        self.sofx = np.array(sofx)
         return sofx
 
     def backward(self,t):
@@ -136,36 +135,44 @@ def initialize_weights(input_dim, hidden_dim, output_dim):
     b1 = np.zeros(hidden_dim)
     w2 = np.random.randn(hidden_dim, output_dim) * 0.01
     b2 = np.zeros(output_dim)
-    return w1, b1, w2, b2
+    return np.array(w1), np.array(b1), np.array(w2),np.array(b2)
 
 def compute_loss(y_true, y_pred): # compute cross-entropy loss
     loss = 0
     y_true, y_pred = np.array(y_true), np.array(y_pred)
+    eps = 1e-10 # small constant to avoid numerical instability
     for i in range(y_true.shape[0]):
-        loss += -y_true[i]*np.log(y_pred[i])
+        loss += -y_true[i]*np.log(y_pred[i]+eps)
     return loss
 
-def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_rate=0.01, num_epochs=100):
+#init=init()
+softmax=Softmax()
+sigmoid=Sigmoid()
+
+def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_rate=0.01, num_epochs=10):
     w1, b1, w2, b2 = initialize_weights(input_dim, hidden_dim, output_dim)
-
+    print(f'Starting training for {num_epochs} epochs:')
     for i in range(num_epochs):
+            print(f'Epoch {i+1}/{num_epochs}')
         # Forward Pass x_train->k-h->s-o
+            print(f'Forward Pass')
             k = np.dot(x_train, w1) + b1
+            print(f'k: {k}')
             h = sigmoid.forward(k)
+            print(f'h: {h}')
             s = np.dot(h, w2) + b2
+            print(f's: {s}')
             o = softmax.forward(s) #pred
-
+            print(f'o: {o}')
             loss = compute_loss(o, y_train)
-            print(f'Epoch {i+1}/{num_epochs}, Loss: {loss}')
+            print(f'Loss: {loss}')
 
             # Backward Pass
-            ds = softmax.backward(y_train) # derivative of softmax
-            dw2 = np.dot(h.T, ds) # derivative of weights
-            db2 = np.sum(ds, axis=0) # derivative of bias
-            da1 = np.dot(ds, w2.T) # derivative of activation
-            dk = da1 * sigmoid.backward(h) # derivative of Sigmoid
-            dw1 = np.dot(x_train.T, dk)
-            db1 = np.sum(dk, axis=0)
+            db2 = np.array(softmax.backward(y_train)) #dl/ds c
+            db1 = np.dot(db2, np.array(w2).T) #dl/dh b
+            dk = sigmoid.backward(db1)# dl/dk 
+            dw1 = np.dot(np.array([x_train]).T, np.array([dk])) #dk/dw W
+            dw2 = np.dot(np.array([h]).T, np.array([db2]))
 
             # SGD weight updating
             w1 -= learning_rate * dw1
@@ -175,9 +182,7 @@ def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_
 
     return w1, b1, w2, b2
 
-#init=init()
-softmax=Softmax()
-sigmoid=Sigmoid()
+
 
 (xtrain, ytrain), (xval, yval), num_cls = load_synth()
-train_network(xtrain, ytrain, 2, 3, 1, learning_rate=0.01, num_epochs=100)
+train_network(np.array(xtrain), np.array(ytrain), 2, 3, 1, learning_rate=0.01, num_epochs=100)
