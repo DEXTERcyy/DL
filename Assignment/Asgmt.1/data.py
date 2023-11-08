@@ -12,12 +12,12 @@ class Softmax():
 
     def forward(self, x):
         sofx = [np.exp(i) / sum([np.exp(j) for j in x]) for i in x]
-        self.sofx = np.array(sofx)
-        return sofx
+        self.sofx = sofx
+        return self.sofx
 
     def backward(self,t):
         sofx = self.sofx
-        return np.array(sofx)-np.array(t)
+        return np.array(sofx)-t
 
 class Sigmoid():
 
@@ -155,15 +155,10 @@ def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_
     for i in range(num_epochs):
             print(f'Epoch {i+1}/{num_epochs}')
         # Forward Pass x_train->k-h->s-o
-            print(f'Forward Pass')
             k = np.dot(x_train, w1) + b1
-            print(f'k: {k}')
             h = sigmoid.forward(k)
-            print(f'h: {h}')
             s = np.dot(h, w2) + b2
-            print(f's: {s}')
             o = softmax.forward(s) #pred
-            print(f'o: {o}')
             loss = compute_loss(o, y_train)
             print(f'Loss: {loss}')
 

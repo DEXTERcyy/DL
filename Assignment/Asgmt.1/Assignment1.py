@@ -116,3 +116,5 @@ print("b", dh)
 print("V", dv)
 print("c", ds)
 
+#how to make [3,4] x [[5,6,7],[8,9,10] = [[15,18,21],[32,36,40]] in python
+#
