@@ -1,9 +1,11 @@
 # -- assignment 1 --
 import numpy as np
+import random
 from urllib import request
 import gzip
 import pickle
 import os
+import matplotlib.pyplot as plt
 
 class Softmax():
 
@@ -25,6 +27,7 @@ class Sigmoid():
     self.sigx = None
 
   def forward(self, x):
+    x = np.clip(x, -500, 500)  # limit values to avoid overflow in exp
     sigx = 1 / (1 + np.exp(-x))
     self.sigx = sigx
     return sigx
@@ -77,15 +80,15 @@ def load_mnist(final=False, flatten=True):
 
      """
 
-    if not os.path.isfile('mnist.pkl'):
+    if not os.path.isfile('mnist.pkl'): # download MNIST dataset if not yet done
         init()
 
-    xtrain, ytrain, xtest, ytest = load()
-    xtl, xsl = xtrain.shape[0], xtest.shape[0]
+    xtrain, ytrain, xtest, ytest = load() # load data
+    xtl, xsl = xtrain.shape[0], xtest.shape[0] # number of training and test instances
 
-    if flatten:
-        xtrain = xtrain.reshape(xtl, -1)
-        xtest  = xtest.reshape(xsl, -1)
+    if flatten: # flatten images
+        xtrain = xtrain.reshape(xtl, -1)    
+        xtest  = xtest.reshape(xsl, -1) 
 
     if not final: # return the flattened images
         return (xtrain[:-5000], ytrain[:-5000]), (xtrain[-5000:], ytrain[-5000:]), 10
@@ -135,7 +138,7 @@ def initialize_weights(input_dim, hidden_dim, output_dim):
     b1 = np.zeros(hidden_dim)
     w2 = np.random.randn(hidden_dim, output_dim) * 0.01
     b2 = np.zeros(output_dim)
-    return np.array(w1), np.array(b1), np.array(w2),np.array(b2)
+    return w1, b1, w2, b2
 
 def compute_loss(y_true, y_pred): # compute cross-entropy loss
     loss = 0
@@ -149,12 +152,21 @@ def compute_loss(y_true, y_pred): # compute cross-entropy loss
 softmax=Softmax()
 sigmoid=Sigmoid()
 
-def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_rate=0.01, num_epochs=10):
+def train_network(xtrain, ytrain, input_dim, hidden_dim, output_dim, learning_rate=0.01, num_epochs=10):
     w1, b1, w2, b2 = initialize_weights(input_dim, hidden_dim, output_dim)
     print(f'Starting training for {num_epochs} epochs:')
+    xtrain_np = np.array(xtrain)
+    # Get the min and max for each column
+    min_vals = xtrain_np.min(axis=0)
+    max_vals = xtrain_np.max(axis=0)
+    # Normalize to the range [-1, 1]
+    xtrain = (xtrain_np - min_vals) / (max_vals - min_vals)
     for i in range(num_epochs):
             print(f'Epoch {i+1}/{num_epochs}')
-        # Forward Pass x_train->k-h->s-o
+            #randomly choose a training example j from xtrain
+            j = random.randint(0, len(xtrain) - 1)
+            x_train, y_train = xtrain[j], np.eye(2)[ytrain][j]
+            # Forward Pass x_train->k-h->s-o
             k = np.dot(x_train, w1) + b1
             h = sigmoid.forward(k)
             s = np.dot(h, w2) + b2
@@ -164,8 +176,8 @@ def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_
 
             # Backward Pass
             db2 = np.array(softmax.backward(y_train)) #dl/ds c
-            db1 = np.dot(db2, np.array(w2).T) #dl/dh b
-            dk = sigmoid.backward(db1)# dl/dk 
+            db1 = np.dot(db2, np.array(w2).T) #dl/dh
+            dk = sigmoid.backward(db1)# dl/dk b
             dw1 = np.dot(np.array([x_train]).T, np.array([dk])) #dk/dw W
             dw2 = np.dot(np.array([h]).T, np.array([db2]))
 
@@ -174,11 +186,51 @@ def train_network(x_train, y_train, input_dim, hidden_dim, output_dim, learning_
             b1 -= learning_rate * db1
             w2 -= learning_rate * dw2
             b2 -= learning_rate * db2
+    print("w1:\n", w1)
+    print("b1:\n", b1)
+    print("w2:\n", w2)
+    print("b2:\n", b2)
+    print("final loss:\n", loss)
+    return w1, b1, w2, b2, loss
+(xtrain, ytrain), (xval, yval), num_cls = load_synth()
+train_network(np.array(xtrain), np.array(ytrain), 2, 3, 2, learning_rate=0.01, num_epochs=100)
+
+def train_MNIST_network(xtrain, ytrain, input_dim, hidden_dim, output_dim, learning_rate=0.01, num_epochs=10, batch_size=100):
+    w1, b1, w2, b2 = initialize_weights(input_dim, hidden_dim, output_dim)
+    # Normalize
+    x_train = xtrain.astype('float64')
+    x_train /= np.max(x_train)
+    for i in range(num_epochs):
+        for j in range(0, len(xtrain), batch_size):
+            dw1, db1, dw2, db2, loss = 0, 0, 0, 0, 0
+            for k in range(j, j + batch_size):
+                print(f'Epoch:{i+1}/{num_epochs},Batch:{j},Train:{k}.')
+                x_train, y_train = xtrain[k], np.eye(10)[ytrain][k]
+                # Forward Pass
+                k = np.dot(x_train, w1) + b1
+                h = sigmoid.forward(k)
+                s = np.dot(h, w2) + b2
+                o = softmax.forward(s)
+                # Compute Loss
+                loss += compute_loss(y_train, o)
+                # Backward Pass
+                db2 += np.array(softmax.backward(y_train)) #dl/ds c
+                db1 += np.dot(db2, np.array(w2).T) #dl/dh
+                dk = sigmoid.backward(db1)# dl/dk b
+                dw1 += np.dot(np.array([x_train]).T, np.array([dk])) #dk/dw W
+                dw2 += np.dot(np.array([h]).T, np.array([db2]))
+                # Update Weights
+            w1 -= learning_rate * dw1/batch_size
+            b1 -= learning_rate * db1/batch_size
+            w2 -= learning_rate * dw2/batch_size
+            b2 -= learning_rate * db2/batch_size
+            loss /= batch_size
+            print(f'Batch loss: {loss}')
 
     return w1, b1, w2, b2
+(xtrain, ytrain), (xval, yval), num_cls = load_mnist()
+train_MNIST_network(np.array(xtrain), np.array(ytrain), 784, 300, 10, learning_rate=0.01, num_epochs=100)
+print("Done")
 
 
 
-(xtrain, ytrain), (xval, yval), num_cls = load_synth()
-#train_network(np.array(xtrain), np.array(ytrain), 2, 3, 1, learning_rate=0.01, num_epochs=100)
-#train_network(np.array([[1,-1],[0.5,0.5]]), np.array([1,0]), 2, 3, 2, learning_rate=0.01, num_epochs=10)

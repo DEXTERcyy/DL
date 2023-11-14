@@ -31,7 +31,7 @@ class Softmax():
         self.sofx = None
 
     def forward(self, x):
-        sofx = [np.exp(i) / sum([np.exp(j) for j in x]) for i in x]
+        sofx = np.exp(x) / sum([np.exp(j) for j in x])
         self.sofx = sofx
         return sofx
 
@@ -74,18 +74,18 @@ def compute_loss(y_true, y_pred): # compute cross-entropy loss
     return loss
 
 # Input layer
-inputs = np.array([1.,-1.])
+inputs = [1.,-1.]
 
 # First layer
-W = np.array([[1., 1., 1.], [-1., -1., -1.]])
-b = np.array([0., 0., 0.])
+W = [[1., 1., 1.], [-1., -1., -1.]]
+b = [0., 0., 0.]
 
 # Second layer
-V = np.array([[1., 1.], [-1., -1.], [-1., -1.]])
-c = np.array([0., 0.])
+V = [[1., 1.], [-1., -1.], [-1., -1.]]
+c = [0., 0.]
 
 # true class
-t=np.array([1,0])
+t=[1,0]
 
 #activation function
 sigmoid = Sigmoid()
@@ -105,10 +105,10 @@ print("Loss:", l)
 
 # Backward pass
 ds = np.array(softmax.backward(t)) #dl/ds c
-dh = np.dot(ds, np.array(V).T) #dl/dh b
-dk = sigmoid.backward(dh)# dl/dk 
+dh = np.dot(ds, np.array(V).T) #dl/dh 
+dk = sigmoid.backward(dh)# dl/dk b
 dw = np.dot(np.array([inputs]).T, np.array([dk])) #dk/dw W
-dv = np.dot(np.array([h]).T, np.array([ds]))
+dv = np.dot(np.array([h]).T, np.array([ds])) #dl/dv V
 
 # Print the derivatives
 print("W:", dw)
