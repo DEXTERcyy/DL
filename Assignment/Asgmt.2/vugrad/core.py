@@ -83,10 +83,10 @@ class TensorNode:
         scalar value.
         """
         if start:
-            if  self.value.squeeze().shape != ():
+            if  self.value.squeeze().shape != (): # -- squeeze removes all dimensions of size 1
                 raise Exception('backward() can only start from a scalar node.')
 
-            self.grad = np.ones_like(self.value)
+            self.grad = np.ones_like(self.value) #
             # -- the gradient of the loss node is 1, with the same shape as the loss node itself
 
         self.visits += 1
