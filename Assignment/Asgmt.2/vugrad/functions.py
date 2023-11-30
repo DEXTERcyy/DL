@@ -1,4 +1,4 @@
-from .ops import Log, Select, Sum, Normalize, Exp, Sigmoid, RowMax, Expand, RowSum, Unsqueeze, Id
+from .ops import Log, Select, Sum, Normalize, Exp, Sigmoid, ReLU, RowMax, Expand, RowSum, Unsqueeze, Id
 from .mnist import init, load
 from .core import TensorNode
 
@@ -29,7 +29,7 @@ def load_synth(num_train=60_000, num_val=10_000):
 
     # compute the quadratic form
     q = np.einsum('bf, fk, bk -> b', x, quad, x)
-    y = (q > THRESHOLD).astype(np.int)
+    y = (q > THRESHOLD).astype(np.int64)
 
     return (x[:num_train, :], y[:num_train]), (x[num_train:, :], y[num_train:]), 2
 
@@ -105,6 +105,15 @@ def sigmoid(x):
     :return:
     """
     return Sigmoid.do_forward(x)
+
+def relu(x):
+    """
+    Wrap the relu op in a funciton.
+
+    :param x:
+    :return:
+    """
+    return ReLU.do_forward(x)
 
 def softmax(x):
     """
