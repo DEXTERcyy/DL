@@ -8,14 +8,21 @@ class Linear(Module):
     A linear operation. Applies a matrix transformation and a vector translation.
     """
 
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, init_method='Glorot'):
         super().__init__()
-
-        # weights of the matrix transformation
-        glorot_std = np.sqrt(2.0 / (input_size + output_size)) # scalar for Glorot init
-        w = np.random.randn(output_size, input_size) * glorot_std
-        self.w = TensorNode(w)
-
+        if init_method == 'zeros':
+            # Initialize weights to all zeros
+            w = np.zeros((output_size, input_size))
+            self.w = TensorNode(w)
+        elif init_method == 'normal':
+            # Initialize weights from a standard normal distribution
+            w = np.random.randn(output_size, input_size)
+            self.w = TensorNode(w)
+        else:
+            # weights of the matrix transformation
+            glorot_std = np.sqrt(2.0 / (input_size + output_size)) # scalar for Glorot init
+            w = np.random.randn(output_size, input_size) * glorot_std
+            self.w = TensorNode(w)
         # weights of the bias (the translation)
         b = np.zeros((1, output_size))
         self.b = TensorNode(b)
